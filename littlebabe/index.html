@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Little Babe</title>
+</head>
+<body>
+    <div>
+        <button id="rewind">Rewind</button>
+        <button id="back-5">Back 5 seconds</button>
+        <button id="play-button">Play</button>
+        <button id="fw-5">Forward 5 seconds</button>
+    </div>
+    <div>
+        <label>
+            <input type="checkbox" checked id="piano"> Piano
+        </label>
+        <label>
+            <input type="checkbox" checked id="soprano"> Soprano
+        </label>
+        <label>
+            <input type="checkbox" checked id="alto"> Alto
+        </label>
+        <label>
+            <input type="checkbox" checked id="tenor"> Tenor
+        </label>
+        <label>
+            <input type="checkbox" checked id="bass"> Bass
+        </label>
+        <!-- <audio controls width="400" src="./Piano.mp3"></audio> -->
+    </div>
+    <div>
+        <input type="range" min="0" max="100" value="0" style="width: 400px;" id="slider">
+    </div>
+    <ul>
+        <li><button class="measure" time="8.234">Measure 4 - S - Verse 1</button></li>
+        <li><button class="measure" time="47.1">Measure 21 - SA - Verse 2</button></li>
+        <li><button class="measure" time="67.2">Measure 30 - SA split</button></li>
+        <li><button class="measure" time="90.7">Measure 40 - TB + SA - Verse 3</button></li>
+        <li><button class="measure" time="110">Measure 48 - TB split</button></li>
+        <li><button class="measure" time="132">Measure 58 - Verse 4</button></li>
+        <li><button class="measure" time="150">Measure 66 - Alleluia</button></li>
+        <li><button class="measure" time="178">Measure 75 - acapella</button></li>
+    </ul>
+    <script>
+        let piano_mp3 = new Audio("./Piano.mp3");
+        let soprano_mp3 = new Audio("./Soprano.mp3");
+        let alto_mp3 = new Audio("./Alto.mp3");
+        let tenor_mp3 = new Audio("./Tenor.mp3");
+        let bass_mp3 = new Audio("./Bass.mp3");
+        let mp3s = [piano_mp3, soprano_mp3, alto_mp3, tenor_mp3, bass_mp3];
+        function setTime(x) {
+            if (x < 0) {
+                x = 0;
+            }
+            mp3s.forEach(mp3 => {
+                mp3.currentTime = x;
+            })
+        }
+        let play_button = document.getElementById('play-button');
+        play_button.addEventListener('click', (ev) => {
+            if (play_button.innerText === 'Play') {
+                mp3s.forEach(mp3 => {
+                    mp3.play();
+                })
+                play_button.innerText = 'Pause';
+            } else {
+                mp3s.forEach(mp3 => {
+                    mp3.pause();
+                })
+                play_button.innerText = 'Play';
+            }
+        })
+        document.getElementById('back-5').addEventListener('click', () => {
+            let dst = mp3s[0].currentTime - 5;
+            setTime(dst);
+        })
+        document.getElementById('fw-5').addEventListener('click', () => {
+            let dst = mp3s[0].currentTime + 5;
+            setTime(dst);
+        })
+        document.getElementById('rewind').addEventListener('click', () => {
+            setTime(0);
+        });
+        ["piano", "soprano", "alto", "tenor", "bass"].forEach((name, idx) => {
+            let checkbox = document.getElementById(name);
+            let mp3 = mp3s[idx];
+            checkbox.addEventListener("change", ev => {
+
+                if (checkbox.checked) {
+                    mp3.muted = false;
+                } else {
+                    mp3.muted = true;
+                }
+            })
+        })
+        let slider = document.getElementById('slider');
+        slider.addEventListener('change', (ev) =>{
+            setTime(Number(ev.target.value));
+        })
+        piano_mp3.addEventListener('canplaythrough', ev => {
+            slider.setAttribute("max", piano_mp3.duration);
+        })
+        piano_mp3.addEventListener('timeupdate', ev => {
+            slider.value = piano_mp3.currentTime;
+        })
+        setInterval(() => {
+            if (piano_mp3.playing) {
+                slider.value = piano_mp3.currentTime;    
+            }
+        }, 1000);
+        // mp3s.forEach(mp3 => {
+        //     mp3.addEventListener("waiting", ev => {
+        //         console.log(mp3.src, "waiting");
+        //     })
+        //     mp3.addEventListener("seeking", ev => {
+        //         console.log(mp3.src, "seeking");
+        //     })
+        //     mp3.addEventListener("playing", ev => {
+        //         console.log(mp3.src, "playing", performance.now());
+        //     })
+        //     mp3.addEventListener("seeked", ev => {
+        //         console.log(mp3.src, "seeked", performance.now());
+        //     })
+        // })
+        document.querySelectorAll(".measure").forEach(button => {
+            button.addEventListener("click", () => {
+                setTime(Number(button.getAttribute("time")));
+            })
+        })
+    </script>
+    <ul>
+        <li><a href="Piano.mp3" target="_blank">Piano</a></li>
+        <li><a href="Soprano.mp3" target="_blank">Soprano</a></li>
+        <li><a href="Alto.mp3" target="_blank">Alto</a></li>
+        <li><a href="Tenor.mp3" target="_blank">Tenor</a></li>
+        <li><a href="Bass.mp3" target="_blank">Bass</a></li>
+        <li><a href="LittleBabe.mp3" target="_blank">Full</a></li>
+    </ul>
+</body>
+</html>
