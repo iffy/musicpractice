@@ -2,6 +2,15 @@
 <html>
 <head>
     <title>Little Babe by Michael Jothen</title>
+    <style>
+        .voice {
+            display: flex;
+            align-items: center;
+        }
+        .voice label {
+            flex-basis: 7rem;
+        }
+    </style>
 </head>
 <body>
     <p>Little Babe by Michael Jothen</p>
@@ -11,21 +20,36 @@
         <button id="fw-5">Forward 5 seconds</button>
     </div>
     <div style="padding: 1rem;">
-        <label>
-            <input type="checkbox" checked id="piano"> Piano
-        </label>
-        <label>
-            <input type="checkbox" checked id="soprano"> Soprano
-        </label>
-        <label>
-            <input type="checkbox" checked id="alto"> Alto
-        </label>
-        <label>
-            <input type="checkbox" checked id="tenor"> Tenor
-        </label>
-        <label>
-            <input type="checkbox" checked id="bass"> Bass
-        </label>
+        <div class="voice">
+            <label>
+                <input type="checkbox" checked id="piano"> Piano
+            </label>
+            <input type="range" min="0" max="100" value="50" id="piano-volume"/>
+        </div>
+        <div class="voice">
+            <label>
+                <input type="checkbox" checked id="soprano"> Soprano
+            </label>
+            <input type="range" min="0" max="100" value="50" id="soprano-volume"/>
+        </div>
+        <div class="voice">
+            <label>
+                <input type="checkbox" checked id="alto"> Alto
+            </label>
+            <input type="range" min="0" max="100" value="50" id="alto-volume"/>
+        </div>
+        <div class="voice">
+            <label>
+                <input type="checkbox" checked id="tenor"> Tenor
+            </label>
+            <input type="range" min="0" max="100" value="50" id="tenor-volume"/>
+        </div>
+        <div class="voice">
+            <label>
+                <input type="checkbox" checked id="bass"> Bass
+            </label>
+            <input type="range" min="0" max="100" value="50" id="bass-volume"/>
+        </div>
         <!-- <audio controls width="400" src="./Piano.mp3"></audio> -->
     </div>
     <div>
@@ -92,15 +116,18 @@
             setTime(dst);
         });
         ["piano", "soprano", "alto", "tenor", "bass"].forEach((name, idx) => {
+            let volumeslider = document.getElementById(name + '-volume');
             let checkbox = document.getElementById(name);
             let mp3 = mp3s[idx];
             checkbox.addEventListener("change", ev => {
-
                 if (checkbox.checked) {
                     mp3.muted = false;
                 } else {
                     mp3.muted = true;
                 }
+            })
+            volumeslider.addEventListener('change', ev => {
+                mp3.volume = ev.target.value / 100.0;
             })
         })
         let slider = document.getElementById('slider');
