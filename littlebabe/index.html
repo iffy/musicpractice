@@ -180,13 +180,13 @@
             if (looping_checkbox.checked && time > loop_end.value) {
                 setTime(Number(loop_start.value));
             }
-            mp3s.forEach(mp3 => {
-                let delta = piano_mp3.currentTime - mp3.currentTime;
-                if (Math.abs(delta) > 0.2) {
-                    console.log("adjust", mp3.src, delta);
-                    mp3.currentTime = piano_mp3.currentTime;
-                }
-            })
+            // mp3s.forEach(mp3 => {
+            //     let delta = piano_mp3.currentTime - mp3.currentTime;
+            //     if (Math.abs(delta) > 0.2) {
+            //         console.log("adjust", mp3.src, delta);
+            //         mp3.currentTime = piano_mp3.currentTime;
+            //     }
+            // })
         })
         function makeLoopBig() {
             if (loop_end.value <= loop_start.value) {
