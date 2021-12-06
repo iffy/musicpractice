@@ -5,12 +5,11 @@
 </head>
 <body>
     <div>
-        <button id="rewind">Rewind</button>
         <button id="back-5">Back 5 seconds</button>
         <button id="play-button">Play</button>
         <button id="fw-5">Forward 5 seconds</button>
     </div>
-    <div>
+    <div style="padding: 1rem;">
         <label>
             <input type="checkbox" checked id="piano"> Piano
         </label>
@@ -30,18 +29,31 @@
     </div>
     <div>
         <input type="range" min="0" max="100" value="0" style="width: 400px;" id="slider">
+        <span id="slider-num">0</span>s
     </div>
     <ul>
-        <li><button class="measure" time="8.234">Measure 4 - S - Verse 1</button></li>
+        <li>
+            <button id="start-at-button">Start at</button>
+            <input id="loop-start" type="number" min="0" value="0" style="width: 3rem;">s
+            <label>
+                <input type="checkbox" id="loop-checkbox"> Loop ending at:
+                <input id="loop-end" type="number" min="0" value="0" style="width: 3rem;">s
+            </label>
+        </li>
+        <li><button class="measure" time="1">From the top</button></li>
+        <li><button class="measure" time="8.234" end="44">Measure 4 - S - Verse 1</button></li>
         <li><button class="measure" time="47.1">Measure 21 - SA - Verse 2</button></li>
-        <li><button class="measure" time="67.2">Measure 30 - SA split</button></li>
-        <li><button class="measure" time="90.7">Measure 40 - TB + SA - Verse 3</button></li>
-        <li><button class="measure" time="110">Measure 48 - TB split</button></li>
-        <li><button class="measure" time="132">Measure 58 - Verse 4</button></li>
-        <li><button class="measure" time="150">Measure 66 - Alleluia</button></li>
-        <li><button class="measure" time="178">Measure 75 - acapella</button></li>
+        <li><button class="measure" time="67.2" end="78">Measure 30 - SA split</button></li>
+        <li><button class="measure" time="90.7" end="110">Measure 40 - TB + SA - Verse 3</button></li>
+        <li><button class="measure" time="110" end="119">Measure 48 - TB split</button></li>
+        <li><button class="measure" time="132" end="151">Measure 58 - Verse 4</button></li>
+        <li><button class="measure" time="150" end="169">Measure 66 - Alleluia</button></li>
+        <li><button class="measure" time="178" end="195">Measure 75 - acapella</button></li>
     </ul>
     <script>
+        let loop_start = document.getElementById('loop-start');
+        let loop_end = document.getElementById('loop-end');
+        let looping_checkbox = document.getElementById('loop-checkbox');
         let piano_mp3 = new Audio("./Piano.mp3");
         let soprano_mp3 = new Audio("./Soprano.mp3");
         let alto_mp3 = new Audio("./Alto.mp3");
@@ -77,9 +89,6 @@
         document.getElementById('fw-5').addEventListener('click', () => {
             let dst = mp3s[0].currentTime + 5;
             setTime(dst);
-        })
-        document.getElementById('rewind').addEventListener('click', () => {
-            setTime(0);
         });
         ["piano", "soprano", "alto", "tenor", "bass"].forEach((name, idx) => {
             let checkbox = document.getElementById(name);
@@ -94,6 +103,7 @@
             })
         })
         let slider = document.getElementById('slider');
+        let slider_num = document.getElementById('slider-num');
         slider.addEventListener('change', (ev) =>{
             setTime(Number(ev.target.value));
         })
@@ -101,13 +111,25 @@
             slider.setAttribute("max", piano_mp3.duration);
         })
         piano_mp3.addEventListener('timeupdate', ev => {
-            slider.value = piano_mp3.currentTime;
-        })
-        setInterval(() => {
-            if (piano_mp3.playing) {
-                slider.value = piano_mp3.currentTime;    
+            let time = piano_mp3.currentTime
+            slider.value = time;
+            slider_num.innerText = Math.floor(time);
+            if (looping_checkbox.checked && time > loop_end.value) {
+                setTime(Number(loop_start.value));
             }
-        }, 1000);
+        })
+        function makeLoopBig() {
+            if (loop_end.value <= loop_start.value) {
+                loop_end.value = loop_start.value + 1;
+            }
+        }
+        loop_end.addEventListener('change', makeLoopBig);
+        loop_start.addEventListener('change', makeLoopBig);
+        // setInterval(() => {
+        //     if (piano_mp3.playing) {
+        //         slider.value = piano_mp3.currentTime;    
+        //     }
+        // }, 1000);
         // mp3s.forEach(mp3 => {
         //     mp3.addEventListener("waiting", ev => {
         //         console.log(mp3.src, "waiting");
@@ -122,19 +144,31 @@
         //         console.log(mp3.src, "seeked", performance.now());
         //     })
         // })
+        
+        document.getElementById("start-at-button").addEventListener('click', () => {
+            setTime(Number(loop_start.value));
+        })
         document.querySelectorAll(".measure").forEach(button => {
             button.addEventListener("click", () => {
-                setTime(Number(button.getAttribute("time")));
+                let num = Number(button.getAttribute("time"));
+                setTime(num);
+                loop_start.value = num;
+                if (button.hasAttribute("end")) {
+                    let end = Number(button.getAttribute('end'));
+                    loop_end.value = end;
+                }
+                makeLoopBig();
             })
         })
+        
     </script>
     <ul>
-        <li><a href="Piano.mp3" target="_blank">Piano</a></li>
-        <li><a href="Soprano.mp3" target="_blank">Soprano</a></li>
-        <li><a href="Alto.mp3" target="_blank">Alto</a></li>
-        <li><a href="Tenor.mp3" target="_blank">Tenor</a></li>
-        <li><a href="Bass.mp3" target="_blank">Bass</a></li>
-        <li><a href="LittleBabe.mp3" target="_blank">Full</a></li>
+        <li><a href="LittleBabe.mp3" target="_blank">Full.mp3</a></li>
+        <li><a href="Piano.mp3" target="_blank">Piano.mp3</a></li>
+        <li><a href="Soprano.mp3" target="_blank">Soprano.mp3</a></li>
+        <li><a href="Alto.mp3" target="_blank">Alto.mp3</a></li>
+        <li><a href="Tenor.mp3" target="_blank">Tenor.mp3</a></li>
+        <li><a href="Bass.mp3" target="_blank">Bass.mp3</a></li>
     </ul>
 </body>
 </html>
