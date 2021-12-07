@@ -235,7 +235,6 @@
                     ch.audio.currentTime = x + ch.skew;
                 } catch(err) {
                     console.log(err);
-                    console.log(x, ch.skew);
                 }
                 
             })
@@ -313,38 +312,40 @@
         // skew guard
         channels.forEach(ch => {
             ch.audio.addEventListener('timeupdate', () => {
-                let diff = (channels[0].audio.currentTime - ch.audio.currentTime);
+                let diff = (channels[0].audio.currentTime - (ch.audio.currentTime - ch.skew));
                 ch.skews.push(diff);
                 ch.skews.shift();
             })
         })
         setInterval(() => {
+            let reset = false;
             channels.forEach(ch => {
-                let average = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+                const new_skew = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+
                 // let diff = channels[0].audio.currentTime - ch.audio.currentTime;
-                if (Math.abs(average) < 0.0001) {
-                    return;
-                }
-                if (average > 0) {
-                    // this channel is lagging
-                    ch.audio.playbackRate *= 1.001;
-                } else {
-                    // this channel is ahead
-                    ch.audio.playbackRate *= 0.999;
-                }
+                // if (Math.abs(average) < 0.0001) {
+                //     return;
+                // }
+                // if (average > 0) {
+                //     // this channel is lagging
+                //     ch.audio.playbackRate *= 1.001;
+                // } else {
+                //     // this channel is ahead
+                //     ch.audio.playbackRate *= 0.999;
+                // }
                 // let catchup_speed
                 // const average = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
 
-                // const old_skew = ch.skew;
-                // if (Math.abs(new_skew - old_skew) > 0.001) {
-                //     ch.skew = new_skew;
-                //     console.log(`Skew too big for ${ch.name}: ${new_skew}`);
-                //     reset = true;
-                // }
+                const old_skew = ch.skew;
+                if (Math.abs(new_skew - old_skew) > 0.1) {
+                    ch.skew = new_skew;
+                    console.log(`Skew too big for ${ch.name}: ${new_skew}`);
+                    reset = true;
+                }
             })
-            // if (reset) {
-            //     setTime(channels[0].audio.currentTime);
-            // }
+            if (reset) {
+                setTime(channels[0].audio.currentTime);
+            }
         }, 1000)
         // Debug skew
         channels.forEach(ch => {
@@ -380,6 +381,6 @@
             })
         }) 
     </script>
-    <p class="version">v3</p>
+    <p class="version">v4</p>
 </body>
 </html>
