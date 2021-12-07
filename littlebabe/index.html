@@ -302,6 +302,17 @@
                 makeLoopBig();
             })
         })
+        // skew guard
+        setInterval(() => {
+            for (let i = 1; i < channels.length; i++) {
+                let diff = channels[0].audio.currentTime - [i].audio.currentTime;
+                if (Math.abs(diff) > 100000) {
+                    console.log("Skew is too big");
+                    setTime(channels[0].audio.currentTime);
+                    break;
+                }
+            }
+        }, 1000)
         // Debug skew
         channels.forEach(ch => {
             let div = document.createElement('div');
