@@ -88,11 +88,17 @@
         <li><button class="measure" time="150" end="169">Measure 66 - Alleluia</button></li>
         <li><button class="measure" time="178" end="195">Measure 75 - acapella</button></li>
     </ul>
+    <div>
+        Skew: <input type="number" id="skew-slider" value="0.02" step="0.01" min="0" max="4" size=6>
+        <br/> Recommended Skew: <span id="recommended-skew">Let it play a little to find out</span>
+    </div>
     <script>
         let loop_start = document.getElementById('loop-start');
         let loop_end = document.getElementById('loop-end');
         let looping_checkbox = document.getElementById('loop-checkbox');
         let play_button = document.getElementById('play-button');
+        let skew_slider = document.getElementById('skew-slider');
+        let skew = Number(skew_slider.value);
         var channels = [
             {mp3: './Piano.mp3', name: 'piano'},
             {mp3: './Soprano.mp3', name: 'soprano'},
@@ -104,10 +110,9 @@
         function play() {
             PLAYING = true;
             let start = performance.now();
-            channels.forEach(ch => {
+            channels.forEach((ch, idx) => {
                 ch.delay = performance.now() - start;
                 ch.audio.play();
-
             })
             play_button.innerText = 'Pause';
         }
@@ -144,9 +149,6 @@
             channel.status = document.getElementById(channel.name + '-status');
             channel.seeking = false;
             channel.waiting = false;
-            channel.skew = 0;
-            channel.delay = 0;
-            channel.skews = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             channel.isReady = () => {
                 if (!channel.seeking && !channel.waiting && channel.audio.readyState >= 2) {
                     channel.status.innerText = '';
@@ -212,6 +214,10 @@
                 ch.audio.muted = false;
             })
         }, 1)
+        skew_slider.addEventListener('change', ev => {
+            skew = Number(ev.target.value);
+            setTime(channels[0].audio.currentTime);
+        })
         
         // events = [
         //     "abort",
@@ -247,11 +253,11 @@
                 x = 0;
             }
             let start = performance.now();
-            channels.forEach(ch => {
+            channels.forEach((ch, idx) => {
                 try {
-                    ch.audio.currentTime = x + ch.delay + performance.now() - start;
+                    ch.audio.currentTime = x + ch.delay + performance.now() - start + (skew * idx);
                 } catch(err) {
-                    console.log(err);
+                    console.log(err, x, ch.delay, performance.now(), start, skew);
                 }
             })
         }
@@ -326,77 +332,53 @@
             })
         })
         // skew guard
-        channels.forEach(ch => {
-            ch.audio.addEventListener('timeupdate', () => {
-                let diff = (channels[0].audio.currentTime - (ch.audio.currentTime - ch.skew));
-                ch.skews.push(diff);
-                ch.skews.shift();
-            })
+        let ch0 = channels[0].audio;
+        let ch1 = channels[1].audio;
+        let samples = [];
+        ch1.addEventListener('timeupdate', () => {
+            let diff = ch0.currentTime - ch1.currentTime + skew;
+            samples.push(diff);
+            if (samples.length < 100) {
+                return;
+            }
+            samples.shift();
+            const average = samples.reduce((a, b) => a + b) / samples.length;
+            document.getElementById('recommended-skew').innerText = -average.toFixed(3);
         })
-        // setInterval(() => {
-        //     let reset = false;
-        //     channels.forEach(ch => {
-        //         const new_skew = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+        // channels.forEach(ch => {
+        //     let div = document.createElement('div');
+        //     let range = document.createElement('input');
+        //     range.setAttribute('type', 'range');
+        //     range.setAttribute('min', '-0.5');
+        //     range.setAttribute('max', '0.5');
+        //     range.setAttribute('step', '0.0001');
+        //     range.setAttribute('style', 'width: 150px');
+        //     range.disabled = true;
+        //     range.value = 0;
+        //     div.appendChild(range);
 
-        //         // let diff = channels[0].audio.currentTime - ch.audio.currentTime;
-        //         // if (Math.abs(average) < 0.0001) {
-        //         //     return;
-        //         // }
-        //         // if (average > 0) {
-        //         //     // this channel is lagging
-        //         //     ch.audio.playbackRate *= 1.001;
-        //         // } else {
-        //         //     // this channel is ahead
-        //         //     ch.audio.playbackRate *= 0.999;
-        //         // }
-        //         // let catchup_speed
-        //         // const average = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+        //     let adjusted = document.createElement('input');
+        //     adjusted.setAttribute('type', 'range');
+        //     adjusted.setAttribute('min', '-0.5');
+        //     adjusted.setAttribute('max', '0.5');
+        //     adjusted.setAttribute('step', '0.0001');
+        //     adjusted.setAttribute('style', 'width: 150px');
+        //     adjusted.disabled = true;
+        //     adjusted.value = 0;
+        //     div.appendChild(adjusted);
 
-        //         const old_skew = ch.skew;
-        //         if (Math.abs(new_skew - old_skew) > 0.1) {
-        //             ch.skew = new_skew;
-        //             console.log(`Skew too big for ${ch.name}: ${new_skew}`);
-        //             reset = true;
-        //         }
+        //     let display = document.createElement('span');
+        //     div.appendChild(display);
+        //     document.body.appendChild(div);
+        //     ch.audio.addEventListener('timeupdate', () => {
+        //         let diff = channels[0].audio.currentTime - ch.audio.currentTime;
+        //         range.value = diff;
+        //         adjusted.value = diff - ch.skew;
+        //         ch.skew = diff;
+        //         display.innerText = ch.audio.playbackRate + ' ' + ch.skew + ' ' + diff;
         //     })
-        //     if (reset) {
-        //         setTime(channels[0].audio.currentTime);
-        //     }
-        // }, 1000)
-        // Debug skew
-        channels.forEach(ch => {
-            let div = document.createElement('div');
-            let range = document.createElement('input');
-            range.setAttribute('type', 'range');
-            range.setAttribute('min', '-0.5');
-            range.setAttribute('max', '0.5');
-            range.setAttribute('step', '0.0001');
-            range.setAttribute('style', 'width: 150px');
-            range.disabled = true;
-            range.value = 0;
-            div.appendChild(range);
-
-            let adjusted = document.createElement('input');
-            adjusted.setAttribute('type', 'range');
-            adjusted.setAttribute('min', '-0.5');
-            adjusted.setAttribute('max', '0.5');
-            adjusted.setAttribute('step', '0.0001');
-            adjusted.setAttribute('style', 'width: 150px');
-            adjusted.disabled = true;
-            adjusted.value = 0;
-            div.appendChild(adjusted);
-
-            let display = document.createElement('span');
-            div.appendChild(display);
-            document.body.appendChild(div);
-            ch.audio.addEventListener('timeupdate', () => {
-                let diff = channels[0].audio.currentTime - ch.audio.currentTime;
-                range.value = diff;
-                adjusted.value = diff - ch.skew;
-                display.innerText = ch.audio.playbackRate + ' ' + ch.skew + ' ' + diff;
-            })
-        }) 
+        // }) 
     </script>
-    <p class="version">v6</p>
+    <p class="version">v7</p>
 </body>
 </html>
