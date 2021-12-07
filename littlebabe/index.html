@@ -141,6 +141,7 @@
             channel.status = document.getElementById(channel.name + '-status');
             channel.seeking = false;
             channel.waiting = false;
+            channel.skews = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             channel.isReady = () => {
                 if (!channel.seeking && !channel.waiting && channel.audio.readyState >= 2) {
                     channel.status.innerText = '';
@@ -303,11 +304,18 @@
             })
         })
         // skew guard
+        channels.forEach(ch => {
+            ch.audio.addEventListener('timeupdate', () => {
+                let diff = (channels[0].audio.currentTime - ch.audio.currentTime) * 1000;
+                ch.skews.push(diff);
+                ch.skews.shift();
+            })
+        })
         setInterval(() => {
             for (let i = 1; i < channels.length; i++) {
-                let diff = channels[0].audio.currentTime - [i].audio.currentTime;
-                if (Math.abs(diff) > 100000) {
-                    console.log("Skew is too big");
+                const average = channels[i].skews.reduce((a, b) => a + b) / channels[i].skews.length;
+                if (Math.abs(average) > 400) {
+                    console.log(`Skew too big for ${channels[i].name}: ${average}`);
                     setTime(channels[0].audio.currentTime);
                     break;
                 }
@@ -335,5 +343,6 @@
             })
         }) 
     </script>
+    <p class="version">v2</p>
 </body>
 </html>
