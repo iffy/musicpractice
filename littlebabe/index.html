@@ -64,7 +64,6 @@
             <input type="range" min="0" max="100" value="50" id="bass-volume"/>
             <span id="bass-status"></span>
         </div>
-        <!-- <audio controls width="400" src="./Piano.mp3"></audio> -->
     </div>
     <div>
         <input type="range" min="0" max="100" value="0" style="width: 400px;" id="slider">
@@ -303,7 +302,27 @@
                 makeLoopBig();
             })
         })
-        
+        // Debug skew
+        channels.forEach(ch => {
+            let div = document.createElement('div');
+            let range = document.createElement('input');
+            range.setAttribute('type', 'range');
+            range.setAttribute('min', '-0.5');
+            range.setAttribute('max', '0.5');
+            range.setAttribute('step', '0.0001');
+            range.setAttribute('style', 'width: 300px');
+            range.disabled = true;
+            range.value = 0;
+            div.appendChild(range);
+            let display = document.createElement('span');
+            div.appendChild(display);
+            document.body.appendChild(div);
+            ch.audio.addEventListener('timeupdate', () => {
+                let diff = channels[0].audio.currentTime - ch.audio.currentTime;
+                range.value = diff;
+                display.innerText = Math.floor(diff * 10000);
+            })
+        }) 
     </script>
 </body>
 </html>
