@@ -141,6 +141,7 @@
             channel.status = document.getElementById(channel.name + '-status');
             channel.seeking = false;
             channel.waiting = false;
+            channel.skew = 0;
             channel.skews = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             channel.isReady = () => {
                 if (!channel.seeking && !channel.waiting && channel.audio.readyState >= 2) {
@@ -230,7 +231,13 @@
                 x = 0;
             }
             channels.forEach(ch => {
-                ch.audio.currentTime = x;
+                try {
+                    ch.audio.currentTime = x + ch.skew;
+                } catch(err) {
+                    console.log(err);
+                    console.log(x, ch.skew);
+                }
+                
             })
         }
         
@@ -306,20 +313,38 @@
         // skew guard
         channels.forEach(ch => {
             ch.audio.addEventListener('timeupdate', () => {
-                let diff = (channels[0].audio.currentTime - ch.audio.currentTime) * 1000;
+                let diff = (channels[0].audio.currentTime - ch.audio.currentTime);
                 ch.skews.push(diff);
                 ch.skews.shift();
             })
         })
         setInterval(() => {
-            for (let i = 1; i < channels.length; i++) {
-                const average = channels[i].skews.reduce((a, b) => a + b) / channels[i].skews.length;
-                if (Math.abs(average) > 400) {
-                    console.log(`Skew too big for ${channels[i].name}: ${average}`);
-                    setTime(channels[0].audio.currentTime);
-                    break;
+            channels.forEach(ch => {
+                let average = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+                // let diff = channels[0].audio.currentTime - ch.audio.currentTime;
+                if (Math.abs(average) < 0.0001) {
+                    return;
                 }
-            }
+                if (average > 0) {
+                    // this channel is lagging
+                    ch.audio.playbackRate *= 1.001;
+                } else {
+                    // this channel is ahead
+                    ch.audio.playbackRate *= 0.999;
+                }
+                // let catchup_speed
+                // const average = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+
+                // const old_skew = ch.skew;
+                // if (Math.abs(new_skew - old_skew) > 0.001) {
+                //     ch.skew = new_skew;
+                //     console.log(`Skew too big for ${ch.name}: ${new_skew}`);
+                //     reset = true;
+                // }
+            })
+            // if (reset) {
+            //     setTime(channels[0].audio.currentTime);
+            // }
         }, 1000)
         // Debug skew
         channels.forEach(ch => {
@@ -329,20 +354,32 @@
             range.setAttribute('min', '-0.5');
             range.setAttribute('max', '0.5');
             range.setAttribute('step', '0.0001');
-            range.setAttribute('style', 'width: 300px');
+            range.setAttribute('style', 'width: 150px');
             range.disabled = true;
             range.value = 0;
             div.appendChild(range);
+
+            let adjusted = document.createElement('input');
+            adjusted.setAttribute('type', 'range');
+            adjusted.setAttribute('min', '-0.5');
+            adjusted.setAttribute('max', '0.5');
+            adjusted.setAttribute('step', '0.0001');
+            adjusted.setAttribute('style', 'width: 150px');
+            adjusted.disabled = true;
+            adjusted.value = 0;
+            div.appendChild(adjusted);
+
             let display = document.createElement('span');
             div.appendChild(display);
             document.body.appendChild(div);
             ch.audio.addEventListener('timeupdate', () => {
                 let diff = channels[0].audio.currentTime - ch.audio.currentTime;
                 range.value = diff;
-                display.innerText = Math.floor(diff * 10000);
+                adjusted.value = diff - ch.skew;
+                display.innerText = ch.audio.playbackRate + ' ' + ch.skew + ' ' + diff;
             })
         }) 
     </script>
-    <p class="version">v2</p>
+    <p class="version">v3</p>
 </body>
 </html>
