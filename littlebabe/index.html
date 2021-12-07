@@ -103,8 +103,11 @@
         let PLAYING = false;
         function play() {
             PLAYING = true;
+            let start = performance.now();
             channels.forEach(ch => {
+                ch.delay = performance.now() - start;
                 ch.audio.play();
+
             })
             play_button.innerText = 'Pause';
         }
@@ -142,6 +145,7 @@
             channel.seeking = false;
             channel.waiting = false;
             channel.skew = 0;
+            channel.delay = 0;
             channel.skews = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             channel.isReady = () => {
                 if (!channel.seeking && !channel.waiting && channel.audio.readyState >= 2) {
@@ -197,6 +201,18 @@
                 channel.onChange();
             })
         })
+        // To get a delay measurement
+        setTimeout(() => {
+            channels.forEach(ch => {
+                ch.audio.muted = true;
+            })
+            play();
+            pause();
+            channels.forEach(ch => {
+                ch.audio.muted = false;
+            })
+        }, 1)
+        
         // events = [
         //     "abort",
         //     "canplay",
@@ -233,7 +249,7 @@
             let start = performance.now();
             channels.forEach(ch => {
                 try {
-                    ch.audio.currentTime = x + performance.now() - start;
+                    ch.audio.currentTime = x + ch.delay + performance.now() - start;
                 } catch(err) {
                     console.log(err);
                 }
@@ -381,6 +397,6 @@
             })
         }) 
     </script>
-    <p class="version">v5</p>
+    <p class="version">v6</p>
 </body>
 </html>
