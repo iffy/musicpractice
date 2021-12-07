@@ -230,13 +230,13 @@
             if (x < 0) {
                 x = 0;
             }
+            let start = performance.now();
             channels.forEach(ch => {
                 try {
-                    ch.audio.currentTime = x + ch.skew;
+                    ch.audio.currentTime = x + performance.now() - start;
                 } catch(err) {
                     console.log(err);
                 }
-                
             })
         }
         
@@ -317,36 +317,36 @@
                 ch.skews.shift();
             })
         })
-        setInterval(() => {
-            let reset = false;
-            channels.forEach(ch => {
-                const new_skew = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+        // setInterval(() => {
+        //     let reset = false;
+        //     channels.forEach(ch => {
+        //         const new_skew = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
 
-                // let diff = channels[0].audio.currentTime - ch.audio.currentTime;
-                // if (Math.abs(average) < 0.0001) {
-                //     return;
-                // }
-                // if (average > 0) {
-                //     // this channel is lagging
-                //     ch.audio.playbackRate *= 1.001;
-                // } else {
-                //     // this channel is ahead
-                //     ch.audio.playbackRate *= 0.999;
-                // }
-                // let catchup_speed
-                // const average = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
+        //         // let diff = channels[0].audio.currentTime - ch.audio.currentTime;
+        //         // if (Math.abs(average) < 0.0001) {
+        //         //     return;
+        //         // }
+        //         // if (average > 0) {
+        //         //     // this channel is lagging
+        //         //     ch.audio.playbackRate *= 1.001;
+        //         // } else {
+        //         //     // this channel is ahead
+        //         //     ch.audio.playbackRate *= 0.999;
+        //         // }
+        //         // let catchup_speed
+        //         // const average = ch.skews.reduce((a, b) => a + b) / ch.skews.length;
 
-                const old_skew = ch.skew;
-                if (Math.abs(new_skew - old_skew) > 0.1) {
-                    ch.skew = new_skew;
-                    console.log(`Skew too big for ${ch.name}: ${new_skew}`);
-                    reset = true;
-                }
-            })
-            if (reset) {
-                setTime(channels[0].audio.currentTime);
-            }
-        }, 1000)
+        //         const old_skew = ch.skew;
+        //         if (Math.abs(new_skew - old_skew) > 0.1) {
+        //             ch.skew = new_skew;
+        //             console.log(`Skew too big for ${ch.name}: ${new_skew}`);
+        //             reset = true;
+        //         }
+        //     })
+        //     if (reset) {
+        //         setTime(channels[0].audio.currentTime);
+        //     }
+        // }, 1000)
         // Debug skew
         channels.forEach(ch => {
             let div = document.createElement('div');
@@ -381,6 +381,6 @@
             })
         }) 
     </script>
-    <p class="version">v4</p>
+    <p class="version">v5</p>
 </body>
 </html>
