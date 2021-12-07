@@ -34,30 +34,35 @@
                 <input type="checkbox" checked id="piano"> Piano
             </label>
             <input type="range" min="0" max="100" value="50" id="piano-volume"/>
+            <span id="piano-status"></span>
         </div>
         <div class="voice">
             <label>
                 <input type="checkbox" checked id="soprano"> Soprano
             </label>
             <input type="range" min="0" max="100" value="50" id="soprano-volume"/>
+            <span id="soprano-status"></span>
         </div>
         <div class="voice">
             <label>
                 <input type="checkbox" checked id="alto"> Alto
             </label>
             <input type="range" min="0" max="100" value="50" id="alto-volume"/>
+            <span id="alto-status"></span>
         </div>
         <div class="voice">
             <label>
                 <input type="checkbox" checked id="tenor"> Tenor
             </label>
             <input type="range" min="0" max="100" value="50" id="tenor-volume"/>
+            <span id="tenor-status"></span>
         </div>
         <div class="voice">
             <label>
                 <input type="checkbox" checked id="bass"> Bass
             </label>
             <input type="range" min="0" max="100" value="50" id="bass-volume"/>
+            <span id="bass-status"></span>
         </div>
         <!-- <audio controls width="400" src="./Piano.mp3"></audio> -->
     </div>
@@ -88,105 +93,177 @@
         let loop_start = document.getElementById('loop-start');
         let loop_end = document.getElementById('loop-end');
         let looping_checkbox = document.getElementById('loop-checkbox');
-        let piano_mp3 = new Audio("./Piano.mp3");
-        let soprano_mp3 = new Audio("./Soprano.mp3");
-        let alto_mp3 = new Audio("./Alto.mp3");
-        let tenor_mp3 = new Audio("./Tenor.mp3");
-        let bass_mp3 = new Audio("./Bass.mp3");
-        let mp3s = [piano_mp3, soprano_mp3, alto_mp3, tenor_mp3, bass_mp3];
-        
-        function waitForSettled(audio) {
-            return new Promise((resolve, reject) => {
-                if (audio.seeking) {
-                    const func = (ev) => {
-                        resolve(null);
-                        audio.removeEventListener('seeked', func);
-                    }
-                    audio.addEventListener('seeked', func);
-                } else {
-                    resolve(null);
-                }
+        let play_button = document.getElementById('play-button');
+        var channels = [
+            {mp3: './Piano.mp3', name: 'piano'},
+            {mp3: './Soprano.mp3', name: 'soprano'},
+            {mp3: './Alto.mp3', name: 'alto'},
+            {mp3: './Tenor.mp3', name: 'tenor'},
+            {mp3: './Bass.mp3', name: 'bass'},
+        ]
+        let PLAYING = false;
+        function play() {
+            PLAYING = true;
+            channels.forEach(ch => {
+                ch.audio.play();
+            })
+            play_button.innerText = 'Pause';
+        }
+        function pause() {
+            PLAYING = false;
+            channels.forEach(ch => {
+                ch.audio.pause();
+            })
+            play_button.innerText = 'Play';
+        }
+        function temporaryPause() {
+            channels.forEach(ch => {
+                ch.audio.pause();
             })
         }
+        function resumeState() {
+            if (PLAYING) {
+                play();
+            } else {
+                pause();
+            }
+        }
+        function numberNotReady() {
+            let result = 0;
+            for (let i = 0; i < channels.length; i++) {
+                if (!channels[i].isReady()) {
+                    result += 1;
+                }
+            }
+            return result;
+        }
+        channels.forEach(channel => {
+            channel.audio = new Audio(channel.mp3);
+            channel.status = document.getElementById(channel.name + '-status');
+            channel.seeking = false;
+            channel.waiting = false;
+            channel.isReady = () => {
+                if (!channel.seeking && !channel.waiting && channel.audio.readyState >= 2) {
+                    channel.status.innerText = '';
+                    return true;
+                } else {
+                    channel.status.innerText = 'loading';
+                    // if (channel.seeking) {
+                    //     channel.status.innerText += ' (seeking)';
+                    // }
+                    // if (channel.waiting) {
+                    //     channel.status.innerText += ' (waiting)';
+                    // }
+                    // if (channel.audio.readyState < 2) {
+                    //     channel.status.innerText += ` (readyState=${channel.audio.readyState})`;
+                    // }
+                    return false;
+                }
+            }
+            channel.onChange = () => {
+                let notready = numberNotReady();
+                if (notready === 0) {
+                    console.log("everyone is ready");
+                    resumeState();
+                } else {
+                    console.log(`not ready count: ${notready}`);
+                    temporaryPause();
+                }
+            };
+            channel.audio.addEventListener('loadeddata', ev => {
+                channel.onChange();
+            })
+            channel.audio.addEventListener("waiting", ev => {
+                channel.waiting = true;
+                channel.onChange();
+            })
+            channel.audio.addEventListener("canplay", ev => {
+                channel.waiting = false;
+                channel.onChange();
+            })
+            channel.audio.addEventListener("seeking", ev => {
+                channel.seeking = true;
+                channel.onChange();
+            })
+            channel.audio.addEventListener("playing", ev => {
+                console.log(channel.name, "playing", performance.now());
+                channel.seeking = false;
+                channel.waiting = false;
+                channel.onChange();
+            })
+            channel.audio.addEventListener("seeked", ev => {
+                channel.seeking = false;
+                channel.onChange();
+            })
+        })
+        // events = [
+        //     "abort",
+        //     "canplay",
+        //     "canplaythrough",
+        //     "durationchange",
+        //     "emptied",
+        //     "ended",
+        //     "error",
+        //     "loadeddata",
+        //     "loadedmetadata",
+        //     "loadstart",
+        //     "pause",
+        //     "play",
+        //     "playing",
+        //     "progress",
+        //     "ratechange",
+        //     "seeked",
+        //     "seeking",
+        //     "stalled",
+        //     "suspend",
+        //     "timeupdate",
+        //     "volumechange",
+        //     "waiting",
+        // ]
+        // events.forEach(ev => {
+        //     channels[0].audio.addEventListener(ev, () => {
+        //         console.log('debug event', ev, channels[0].audio.readyState);
+        //     })
+        // })
         async function setTime(x) {
             if (x < 0) {
                 x = 0;
             }
-            let playing = piano_mp3.playing;
-            let promises = [];
-            mp3s.forEach(mp3 => {
-                if (playing) {
-                    mp3.pause();
-                }
-                mp3.currentTime = x;
-                promises.push(waitForSettled(mp3));
+            channels.forEach(ch => {
+                ch.audio.currentTime = x;
             })
-            await Promise.all(promises);
-            if (playing) {
-                mp3s.forEach(mp3 => {
-                    mp3.play();
-                })
-            }
         }
-        let play_button = document.getElementById('play-button');
+        
         play_button.addEventListener('click', (ev) => {
-            if (play_button.innerText === 'Play') {
-                mp3s.forEach(mp3 => {
-                    mp3.play();
-                })
-                play_button.innerText = 'Pause';
+            if (PLAYING) {
+                pause();
             } else {
-                mp3s.forEach(mp3 => {
-                    mp3.pause();
-                })
-                play_button.innerText = 'Play';
+                play();
             }
         })
         document.getElementById('back-5').addEventListener('click', () => {
-            let dst = mp3s[0].currentTime - 5;
+            let dst = channels[0].audio.currentTime - 5;
             setTime(dst);
         })
         document.getElementById('fw-5').addEventListener('click', () => {
-            let dst = mp3s[0].currentTime + 5;
+            let dst = channels[0].audio.currentTime + 5;
             setTime(dst);
         });
-        ["piano", "soprano", "alto", "tenor", "bass"].forEach((name, idx) => {
-            let volumeslider = document.getElementById(name + '-volume');
-            let checkbox = document.getElementById(name);
-            let mp3 = mp3s[idx];
-            checkbox.addEventListener("change", ev => {
-                if (checkbox.checked) {
-                    mp3.muted = false;
-                } else {
-                    mp3.muted = true;
-                }
-            })
-            volumeslider.addEventListener('change', ev => {
-                mp3.volume = ev.target.value / 100.0;
-            })
-        })
         let slider = document.getElementById('slider');
         let slider_num = document.getElementById('slider-num');
         slider.addEventListener('change', (ev) =>{
             setTime(Number(ev.target.value));
         })
-        piano_mp3.addEventListener('canplaythrough', ev => {
-            slider.setAttribute("max", piano_mp3.duration);
+        channels[0].audio.addEventListener('canplaythrough', ev => {
+            slider.setAttribute("max", channels[0].audio.duration);
         })
-        piano_mp3.addEventListener('timeupdate', ev => {
-            let time = piano_mp3.currentTime
+        channels[0].audio.addEventListener('timeupdate', ev => {
+            let time = channels[0].audio.currentTime
             slider.value = time;
             slider_num.innerText = Math.floor(time);
             if (looping_checkbox.checked && time > loop_end.value) {
                 setTime(Number(loop_start.value));
             }
-            // mp3s.forEach(mp3 => {
-            //     let delta = piano_mp3.currentTime - mp3.currentTime;
-            //     if (Math.abs(delta) > 0.2) {
-            //         console.log("adjust", mp3.src, delta);
-            //         mp3.currentTime = piano_mp3.currentTime;
-            //     }
-            // })
         })
         function makeLoopBig() {
             if (loop_end.value <= loop_start.value) {
@@ -196,26 +273,21 @@
         loop_end.addEventListener('change', makeLoopBig);
         loop_start.addEventListener('change', makeLoopBig);
         
-        // setInterval(() => {
-        //     if (piano_mp3.playing) {
-        //         slider.value = piano_mp3.currentTime;    
-        //     }
-        // }, 1000);
-        // mp3s.forEach(mp3 => {
-        //     mp3.addEventListener("waiting", ev => {
-        //         console.log(mp3.src, "waiting");
-        //     })
-        //     mp3.addEventListener("seeking", ev => {
-        //         console.log(mp3.src, "seeking");
-        //     })
-        //     mp3.addEventListener("playing", ev => {
-        //         console.log(mp3.src, "playing", performance.now());
-        //     })
-        //     mp3.addEventListener("seeked", ev => {
-        //         console.log(mp3.src, "seeked", performance.now());
-        //     })
-        // })
-        
+        channels.forEach(channel => {
+            // Volumn controls
+            let volumeslider = document.getElementById(channel.name + '-volume');
+            let checkbox = document.getElementById(channel.name);
+            checkbox.addEventListener("change", ev => {
+                if (checkbox.checked) {
+                    channel.audio.muted = false;
+                } else {
+                    channel.audio.muted = true;
+                }
+            })
+            volumeslider.addEventListener('change', ev => {
+                channel.audio.volume = ev.target.value / 100.0;
+            })
+        }) 
         document.getElementById("start-at-button").addEventListener('click', () => {
             setTime(Number(loop_start.value));
         })
