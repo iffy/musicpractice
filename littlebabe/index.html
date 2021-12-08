@@ -23,6 +23,10 @@
         <li><a href="Tenor.mp3" target="_blank">Tenor.mp3</a></li>
         <li><a href="Bass.mp3" target="_blank">Bass.mp3</a></li>
     </ul>
+    <p>
+        This works <b>much better</b> on a desktop/laptop.
+        If it's really far out of sync, try adjusting the <i>Skew</i> down at the bottom.
+    </p>
     <div>
         <button id="back-5">Back 5 seconds</button>
         <button id="play-button">Play</button>
@@ -342,7 +346,7 @@
                 samples.shift();
             }
             const average = samples.reduce((a, b) => a + b) / samples.length;
-            document.getElementById('recommended-skew').innerText = -average.toFixed(3);
+            document.getElementById('recommended-skew').innerText = Math.abs(average.toFixed(3));
         })
         // channels.forEach(ch => {
         //     let div = document.createElement('div');
@@ -378,6 +382,6 @@
         //     })
         // }) 
     </script>
-    <p class="version">v8</p>
+    <p class="version">v9</p>
 </body>
 </html>
